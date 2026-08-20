@@ -404,6 +404,22 @@ git checkout example
 
 ---
 
+## SSSF Sandbox extension
+
+This distribution adds an optional, **app-free** `sssf-sandbox` skill around the upstream factory. It stamps a host-side exe.dev lifecycle, a guest provisioner, a capped disposable OpenRouter runtime key path, and safe git-bundle harvesting. It does **not** include Inkwell's blog application or its app-specific prompts and tests.
+
+From a new project directory (or this cloned distribution), run:
+
+```bash
+uv run .claude/skills/sssf-sandbox/scripts/install.py
+cp .env.sample .env # set OPENROUTER_PROVISIONING_KEY; never commit it
+just sbx doctor     # local, non-billable validation
+```
+
+Only then, after deliberately approving a billable VM, use `just sbx mount <run-id>`. Work runs in the VM with a capped runtime key. `just sbx harvest <run-id>` imports results into `refs/sandbox/<run-id>` without giving the sandbox Git push credentials. `just sbx teardown <run-id>` is an explicit destructive cleanup step.
+
+The sandbox layout and credential-boundary design are adapted from [Factory In A Box](https://github.com/disler/inkwell-agent-sandboxes-and-software-factory), MIT licensed, while retaining SSSF as the upstream factory core.
+
 ## License
 
 MIT, see [`LICENSE`](LICENSE).

@@ -158,3 +158,6 @@ sssf.db*
 apps/inkwell/inkwell.db*
 
 *.mov
+
+# sssf-sandbox host runtime: records, capped runtime keys, and harvested bundles
+.sandbox/
