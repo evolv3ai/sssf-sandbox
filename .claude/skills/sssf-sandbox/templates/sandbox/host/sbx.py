@@ -32,7 +32,7 @@ def die(message: str) -> None:
 def run(*args: str, input: str | None = None, capture: bool = False) -> str:
     result = subprocess.run(args, cwd=ROOT, input=input, text=True, capture_output=capture)
     if result.returncode:
-        detail = (result.stderr or result.stdout).strip()
+        detail = (result.stderr or result.stdout or "").strip()
         die(f"command failed ({' '.join(args)}): {detail}")
     return result.stdout.strip() if capture else ""
 
