@@ -125,6 +125,8 @@ def command_doctor(args: argparse.Namespace) -> None:
     missing = [name for name in ("git", "python3", "ssh", "scp", "curl", "uv", "just") if not shutil_which(name)]
     if missing:
         die("missing commands: " + ", ".join(missing))
+    if not os.getenv("OPENROUTER_PROVISIONING_KEY"):
+        die("OPENROUTER_PROVISIONING_KEY is missing; add it to .env (value is never printed)")
     for path in (ROOT / "sandbox" / "guest" / "provision.sh", ROOT / "sandbox" / "guest" / "models.json.tmpl", ROOT / "adws"):
         if not path.exists():
             die(f"required path missing: {path.relative_to(ROOT)}")
