@@ -22,6 +22,11 @@ MODULE_LINE = 'mod sbx "sandbox/just/mod.just"'
 
 
 def stamp(src: Path, dest: Path, force: bool, stamped: list[str], skipped: list[str]) -> None:
+    # A cloned distribution can be installed into its own root. Avoid trying to
+    # copy a skill/template file onto itself in that supported bootstrap flow.
+    if src.resolve() == dest.resolve():
+        skipped.append(str(dest))
+        return
     if src.is_dir():
         for child in sorted(src.iterdir()):
             if child.name in {"__pycache__", ".DS_Store"}:
