@@ -94,11 +94,13 @@ def mint_key(run_id: str, limit: float) -> tuple[str, str]:
             payload = parsed
     except urllib.error.URLError as exc:
         die(f"OpenRouter key mint failed: {exc}")
-    data = payload.get("data", payload)
-    key, key_hash = data.get("key"), data.get("hash")
-    if not key or not key_hash:
+    candidate_data = payload.get("data")
+    data: dict = candidate_data if isinstance(candidate_data, dict) else {}
+    key = payload.get("key") or data.get("key")
+    key_hash = payload.get("hash") or data.get("hash")
+    if not isinstance(key, str) or not isinstance(key_hash, str):
         die("OpenRouter key mint response did not include key and hash")
-    return key, key_hash
+    return str(key), str(key_hash)
 
 
 def revoke_key(key_hash: str) -> None:
@@ -155,6 +157,8 @@ def command_create(args: argparse.Namespace) -> str:
     except ValueError:
         payload = {}
     vm = payload.get("vm_name") or payload.get("name") or run_id
+    record.update({"state": "vm_created", "vm_name": vm, "https_url": f"https://{vm}.exe.xyz"})
+    save(record)
     key, key_hash = mint_key(run_id, args.limit)
     key_path = RUNS / f"{run_id}.key"
     key_path.write_text(key + "\n")
