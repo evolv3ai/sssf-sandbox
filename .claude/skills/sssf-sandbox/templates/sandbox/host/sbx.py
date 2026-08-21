@@ -191,7 +191,7 @@ git rev-parse HEAD
 
 def command_setup(args: argparse.Namespace) -> None:
     data = load(args.run_id)
-    output = ssh_vm(data["vm_name"], "bash app/sandbox/guest/provision.sh")
+    output = ssh_vm(data["vm_name"], "bash app/.claude/skills/sssf-sandbox/templates/sandbox/guest/provision.sh")
     if "PROVISION_READY" not in output:
         die("guest provisioner did not report readiness; VM left running for inspection")
     data["state"] = "ready"

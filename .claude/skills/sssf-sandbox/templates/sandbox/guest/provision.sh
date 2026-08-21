@@ -5,6 +5,10 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "$ROOT"
 
+# The cloned public distribution is skill-only. Stamp the SSSF runtime and
+# sandbox commands into this disposable checkout before validating its tools.
+uv run .claude/skills/sssf-sandbox/scripts/install.py >/dev/null
+
 say() { printf '[provision] %s\n' "$*"; }
 for command in git uv pi; do
   command -v "$command" >/dev/null || { say "missing required command: $command"; exit 1; }
