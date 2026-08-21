@@ -2,7 +2,9 @@
 # Run inside the disposable VM after FILL. Idempotent; it never receives the
 # host provisioning key. The only model credential is app/.env's capped runtime key.
 set -euo pipefail
-ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+# This script initially runs from the skill's template path inside a fresh
+# skill-only clone, so walk six levels to that clone's repository root.
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../../../../.." && pwd)"
 cd "$ROOT"
 
 # The cloned public distribution is skill-only. Stamp the SSSF runtime and
