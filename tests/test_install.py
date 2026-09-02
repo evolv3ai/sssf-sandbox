@@ -61,6 +61,42 @@ def test_just_lists_sbx_and_adw(stamped_repo: Path):
     assert "sdlc" in adw.stdout
 
 
+def test_next_steps_mention_push(stamped_repo: Path):
+    result = run_install(stamped_repo)
+    assert result.returncode == 0, result.stderr
+    assert "git push" in result.stdout
+
+
+def test_fresh_repo_gets_openrouter_roster(stamped_repo: Path):
+    import re
+
+    text = (stamped_repo / "adws/adw_sssf_config/sssf.config.yaml").read_text()
+    models = re.findall(r"^\s*model:\s*(\S+)", text, re.MULTILINE)
+    assert models, "no model: lines found"
+    for m in models:
+        assert m.startswith("openrouter/"), m
+
+
+def test_existing_roster_is_kept(tmp_path: Path):
+    subprocess.run(["git", "init", "-q", "-b", "main"], cwd=tmp_path, check=True)
+    subprocess.run(["git", "remote", "add", "origin", "git@github.com:acme/widgets.git"], cwd=tmp_path, check=True)
+    config = tmp_path / "adws" / "adw_sssf_config" / "sssf.config.yaml"
+    config.parent.mkdir(parents=True)
+    config.write_text("agents: []\n")
+
+    result = run_install(tmp_path)
+    assert result.returncode == 0, result.stderr
+    assert config.read_text() == "agents: []\n"
+
+    result = run_install(tmp_path, "--force")
+    assert result.returncode == 0, result.stderr
+    import re
+    models = re.findall(r"^\s*model:\s*(\S+)", config.read_text(), re.MULTILINE)
+    assert models
+    for m in models:
+        assert m.startswith("openrouter/"), m
+
+
 def test_refuses_when_a_sibling_skill_is_missing(tmp_path: Path):
     # Copy the distribution's skills minus herdr, run its installer from there.
     import shutil

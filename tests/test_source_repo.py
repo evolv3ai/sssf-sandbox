@@ -48,6 +48,14 @@ def test_non_https_is_rejected(tmp_path):
     assert r.returncode == 1 and "https://" in r.stderr and "SBX_SOURCE_REPO" in r.stderr
 
 
+def test_userinfo_in_url_is_rejected(tmp_path):
+    repo = git_repo(tmp_path, None)
+    r = resolve(repo, env={"SBX_SOURCE_REPO": "https://user:secret@github.com/acme/widgets.git"})
+    assert r.returncode == 1
+    assert "credential" in r.stderr
+    assert "secret" not in r.stderr
+
+
 def test_no_origin_is_rejected(tmp_path):
     repo = git_repo(tmp_path, None)
     r = resolve(repo)
@@ -84,7 +92,11 @@ def test_probe_disables_credential_helpers(tmp_path):
     fake_bin.mkdir()
     argv_log = tmp_path / "argv.txt"
     fake_git = fake_bin / "git"
-    fake_git.write_text(f"#!/bin/sh\nprintf '%s\\n' \"$@\" > {argv_log}\n")
+    fake_git.write_text(
+        f"#!/bin/sh\nprintf '%s\\n' \"$@\" > {argv_log}\n"
+        f"printf '%s\\n' \"$HOME\" >> {argv_log}\n"
+        f"printf '%s\\n' \"$GIT_CONFIG_GLOBAL\" >> {argv_log}\n"
+    )
     fake_git.chmod(0o755)
     r = resolve(
         tmp_path, "--probe",
@@ -92,5 +104,10 @@ def test_probe_disables_credential_helpers(tmp_path):
              "PATH": f"{fake_bin}:{os.environ['PATH']}"},
     )
     assert r.returncode == 0, r.stderr
-    args = argv_log.read_text().splitlines()
-    assert args[:3] == ["-c", "credential.helper=", "ls-remote"]
+    lines = argv_log.read_text().splitlines()
+    args = lines[:3]
+    probe_home = lines[-2]
+    probe_git_config_global = lines[-1]
+    assert args == ["-c", "credential.helper=", "ls-remote"]
+    assert probe_git_config_global == "/dev/null"
+    assert probe_home != os.environ.get("HOME")

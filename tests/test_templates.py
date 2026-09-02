@@ -17,15 +17,47 @@ def test_no_inkwell_reference_outside_comments():
     assert hits == [], hits
 
 
+def test_no_inkwell_reference_anywhere_in_sandbox_templates():
+    r = subprocess.run(
+        ["grep", "-ril", "inkwell", str(T / "just" / "sandbox"), str(T / "sandbox_mount")],
+        capture_output=True, text=True,
+    )
+    hits = [l for l in r.stdout.splitlines() if l.strip()]
+    assert hits == [], hits
+
+
 def test_fill_resolves_repo_through_source_repo():
     body = "\n".join(non_comment_lines(T / "just/sandbox/lifecycle/fill.just"))
     assert 'REPO=$(sandbox_mount/host/source_repo.py)' in body
     assert "https://github.com/evolv3ai" not in body
 
 
+def test_roster_models_exist_in_vm_registry():
+    import json
+
+    text = (T / "sssf.config.yaml").read_text()
+    models = re.findall(r"^\s*model:\s*(\S+)", text, re.MULTILINE)
+    assert models, "no model: lines found"
+    registry = json.load((T / "sandbox_mount/guest/models.json.tmpl").open())
+    known = {m["id"] for m in registry["providers"]["openrouter"]["models"]}
+    for m in models:
+        assert m.startswith("openrouter/"), m
+        assert m[len("openrouter/"):] in known, m
+
+
 def test_doctor_probes_the_source_repo():
     body = (T / "just/sandbox/manage/mod.just").read_text()
     assert "source_repo.py --probe" in body
+    probe_line = next(l for l in body.splitlines() if "source_repo.py --probe" in l)
+    assert "2>&1" in probe_line
+
+
+def test_doctor_dry_run_parses(stamped_repo: Path):
+    r = subprocess.run(["just", "--dry-run", "sbx", "manage", "doctor"], cwd=stamped_repo, capture_output=True, text=True)
+    assert r.returncode == 0, r.stderr
+    script = r.stderr + r.stdout
+    chk = subprocess.run(["bash", "-n"], input=script, capture_output=True, text=True)
+    assert chk.returncode == 0, chk.stderr
 
 
 def test_recipes_parse(stamped_repo: Path):

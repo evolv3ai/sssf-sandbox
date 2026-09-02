@@ -13,7 +13,7 @@ It never creates a VM, mints a key, or calls a model.
 
 | Into the target | What it is | Who drives it |
 |---|---|---|
-| `adws/`, `justfile`, `.env.sample` | upstream SSSF: deterministic ADWs, roster config | `sssf` skill |
+| `adws/`, `justfile`, `.env.sample` | upstream SSSF: deterministic ADWs, plus an OpenRouter-only roster on a fresh repo (the VM holds only an OpenRouter key) | `sssf` skill |
 | `just/adws.just` (`just adw …`) | in-sandbox execution layer, one recipe per ADW | the VM, via `execute` |
 | `just/sandbox/` (`just sbx …`) | out-of-sandbox lifecycle: create, fill, setup, observe, execute, teardown; manage: list, harvest, reap, doctor | `sssf-sandbox-orchestrator` |
 | `sandbox_mount/host/` | run records, runs table, source-repo resolution | the recipes |

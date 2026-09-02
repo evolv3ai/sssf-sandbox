@@ -79,8 +79,9 @@ create RUN_ID *FLAGS:
     trap _on_exit EXIT
 
     # ── 3. the VM ──────────────────────────────────────────────────────────────
-    # Control plane is plain ssh; --json makes it scriptable. --tag inkwell is
-    # what `reap` and bulk cleanup filter on.
+    # Control plane is plain ssh; --json makes it scriptable. The tag groups
+    # this repo's VMs in `ssh exe.dev ls`; nothing filters on it. It comes from
+    # SBX_TAG in .env.
     TAG="${SBX_TAG:-sssf-sandbox}"   # exe.dev tag, from .env; lets `ssh exe.dev ls` group this repo's VMs
     echo "vm:      creating $RUN_ID (ssh exe.dev new --tag $TAG) ..."
     VM_JSON="$(ssh exe.dev new --name "$RUN_ID" --tag "$TAG" --json)"

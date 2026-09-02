@@ -50,8 +50,12 @@ evolv3ai/sssf-sandbox
 
 Removed: `templates/sandbox/host/sbx.py`, `templates/sandbox/just/mod.just`,
 `templates/sandbox/sssf.sandbox.config.yaml`. The upstream recipes read
-`adws/adw_sssf_config/sssf.config.yaml`, which the `sssf` skill already stamps, so the
-separate sandbox config file has no consumer.
+`adws/adw_sssf_config/sssf.config.yaml`, which the `sssf` skill stamps with a
+multi-provider roster the VM cannot serve (it holds only an OpenRouter runtime
+key, and setup's gate C pings every model of that file on OpenRouter). The
+installer therefore stamps an OpenRouter-only roster
+(`templates/sssf.config.yaml`) over that path on a fresh repo, and keeps an
+existing roster unless `--force`.
 
 ## Installer behaviour
 

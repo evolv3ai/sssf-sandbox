@@ -408,9 +408,12 @@ git checkout example
 
 This distribution wraps the upstream factory with the sandbox mount system from
 [Factory In A Box](https://github.com/disler/inkwell-agent-sandboxes-and-software-factory)
-(MIT), minus the Inkwell app. One installer stamps all of it into your repo:
+(MIT), minus the Inkwell app. Copy the distribution's skills into your repo, then
+one installer stamps all of it:
 
 ```bash
+git clone https://github.com/evolv3ai/sssf-sandbox /tmp/sssf-sandbox   # the distribution
+cp -r /tmp/sssf-sandbox/.claude .                                      # all six skills into your repo
 uv run .claude/skills/sssf-sandbox/scripts/install.py
 cp .env.sample .env            # OPENROUTER_PROVISIONING_KEY, host only
 git add -A && git commit -m "Install SSSF sandbox" && git push   # the VM clones your PUBLIC remote

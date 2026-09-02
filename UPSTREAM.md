@@ -13,6 +13,7 @@ source at a newer commit, re-applying the listed local edits, and updating the r
 | `.claude/skills/herdr/` | same repo | `57b0f10` (disler `92f1701`) | none |
 | `.claude/skills/sandbox-exe-dev/` | same repo | `57b0f10` (disler `92f1701`) | none |
 | `.claude/skills/sssf-admin/` | `evolv3ai/sssf-admin` | `8193762` | `SKILL.md` description generalized away from the Inkwell repo |
+| `.claude/skills/sssf-sandbox/templates/sssf.config.yaml` | this repo's earlier sssf-sandbox skill (`1a42992`), derived from the sssf template | `1a42992` | every model routed through `openrouter/`; kimi mapped to `openrouter/moonshotai/kimi-k3` |
 
 The inkwell fork commit `57b0f10` = disler upstream `92f1701` plus `71d0576` (pi apiKey
 syntax in `models.json.tmpl`), `96db719` (clone URL, superseded by `source_repo.py`),

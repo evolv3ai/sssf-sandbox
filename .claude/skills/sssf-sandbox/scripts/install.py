@@ -75,10 +75,24 @@ def main() -> int:
               "clone the full sssf-sandbox distribution.", file=sys.stderr)
         return 2
 
+    config_path = root / "adws" / "adw_sssf_config" / "sssf.config.yaml"
+    had_config = config_path.exists()
     subprocess.run(["uv", "run", str(SKILLS_DIR / "sssf" / "scripts" / "install.py")], cwd=root, check=True)
 
     stamped: list[str] = []
     skipped: list[str] = []
+
+    # The sssf skill just stamped a multi-provider roster (openai/, fireworks/,
+    # google/, ...) into config_path. The VM only ever holds an OpenRouter
+    # runtime key, and setup's gate C pings every model in that file on
+    # OpenRouter — so a fresh repo would mint a key, boot a VM, and fail mount
+    # on the first ping. Overlay an OpenRouter-only roster instead. A repo that
+    # already had a roster (its own, or from a prior install) keeps it, since
+    # it may have been hand-edited; --force overwrites it like everything else.
+    if not had_config or args.force:
+        config_path.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(TEMPLATES / "sssf.config.yaml", config_path)
+        stamped.append(f"{config_path} (openrouter roster)")
     for skill in SKILLS:
         stamp(SKILLS_DIR / skill, root / ".claude" / "skills" / skill, args.force, stamped, skipped)
     stamp(TEMPLATES / "just", root / "just", args.force, stamped, skipped)
@@ -99,7 +113,7 @@ def main() -> int:
     print("\nnext steps:")
     print("  1. cp .env.sample .env       # set OPENROUTER_PROVISIONING_KEY; SBX_* as needed")
     print("  2. just sbx manage doctor    # preflight: ssh, key, source repo, adw layer")
-    print("  3. git add -A && git commit -m 'Install SSSF sandbox'   # the VM clones what is pushed")
+    print("  3. git add -A && git commit -m 'Install SSSF sandbox' && git push   # the VM clones the PUBLIC remote")
     print("  4. just sbx mount <run-id>   # explicit, billable")
     print("  or hand the whole build to the manager: /sssf-admin build \"<what to build>\"")
     return 0

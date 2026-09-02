@@ -30,7 +30,7 @@ doctor:
     chk "OPENROUTER_PROVISIONING_KEY set"  '[ -n "${OPENROUTER_PROVISIONING_KEY:-}" ]'
     chk "run_record helper runs"           'sandbox_mount/host/run_record.py list'
     chk "provisioner present"              '[ -x sandbox_mount/guest/provision.sh ]'
-    chk "source repo resolves + clones anonymously" 'sandbox_mount/host/source_repo.py --probe'
+    if out=$(sandbox_mount/host/source_repo.py --probe 2>&1 >/dev/null); then printf '  ok    %s\n' "source repo resolves + clones anonymously"; else printf '  FAIL  %s\n' "source repo resolves + clones anonymously"; printf '        %s\n' "$out"; ok=1; fi
     chk "models template has rates"        'python3 -c "import json;m=json.load(open(\"sandbox_mount/guest/models.json.tmpl\"))[\"providers\"][\"openrouter\"][\"models\"];assert all(set(x[\"cost\"])=={\"input\",\"output\",\"cacheRead\",\"cacheWrite\"} for x in m)"'
     chk "adw layer resolves"               'just --list adw'
     [ "$ok" -eq 0 ] && echo "  sbx doctor: OK" || { echo "  sbx doctor: FAILED"; exit 1; }
