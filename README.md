@@ -404,21 +404,35 @@ git checkout example
 
 ---
 
-## SSSF Sandbox extension
+## Sandboxes, and a manager to run them
 
-This distribution adds an optional, **app-free** `sssf-sandbox` skill around the upstream factory. It stamps a host-side exe.dev lifecycle, a guest provisioner, a capped disposable OpenRouter runtime key path, and safe git-bundle harvesting. It does **not** include Inkwell's blog application or its app-specific prompts and tests.
-
-From a new project directory (or this cloned distribution), run:
+This distribution wraps the upstream factory with the sandbox mount system from
+[Factory In A Box](https://github.com/disler/inkwell-agent-sandboxes-and-software-factory)
+(MIT), minus the Inkwell app. One installer stamps all of it into your repo:
 
 ```bash
 uv run .claude/skills/sssf-sandbox/scripts/install.py
-cp .env.sample .env # set OPENROUTER_PROVISIONING_KEY; never commit it
-just sbx doctor     # local, non-billable validation
+cp .env.sample .env            # OPENROUTER_PROVISIONING_KEY, host only
+git add -A && git commit -m "Install SSSF sandbox" && git push   # the VM clones your PUBLIC remote
+just sbx manage doctor         # preflight, non-billable
 ```
 
-Only then, after deliberately approving a billable VM, use `just sbx mount <run-id>`. Work runs in the VM with a capped runtime key. `just sbx harvest <run-id>` imports results into `refs/sandbox/<run-id>` without giving the sandbox Git push credentials. `just sbx teardown <run-id>` is an explicit destructive cleanup step.
+Three layers, each its own skill:
 
-The sandbox layout and credential-boundary design are adapted from [Factory In A Box](https://github.com/disler/inkwell-agent-sandboxes-and-software-factory), MIT licensed, while retaining SSSF as the upstream factory core.
+| Layer | Skill | You say |
+|---|---|---|
+| the factory inside the VM | `sssf` | `just adw sdlc "…"` (never on the host) |
+| one VM's lifecycle: mount, execute, observe, harvest, teardown, fan out N | `sssf-sandbox-orchestrator` | "mount a sandbox and run X" |
+| a whole build managed for you from herdr panes, with a spend report | `sssf-admin` | "build X and clean up when done" |
+
+`herdr` (the terminal multiplexer the manager drives) and `sandbox-exe-dev` (the exe.dev VM
+layer) ride along. Vendored sources and pins are in [`UPSTREAM.md`](UPSTREAM.md).
+
+Mounting is always explicit and billable: a VM plus a runtime key capped at $50 by default.
+Teardown is never chained; harvest first, look at `refs/sandbox/<run-id>`, then decide.
+`.env` knobs: `SBX_SOURCE_REPO`, `SBX_TAG`, `SBX_APP_DIR` / `SBX_APP_CMD` / `SBX_APP_PORT`
+(set the app knobs only if the sandbox should start and expose a server; otherwise the trace UI
+is what you get at the VM's URL).
 
 ## License
 
