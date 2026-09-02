@@ -38,3 +38,20 @@ def test_fill_dry_run_shows_source_repo_call(stamped_repo: Path):
     r = subprocess.run(["just", "--dry-run", "sbx", "lifecycle", "fill", "run-x"], cwd=stamped_repo, capture_output=True, text=True)
     assert r.returncode == 0, r.stderr
     assert "source_repo.py" in r.stderr + r.stdout
+
+
+def test_observe_reads_app_knobs_from_env():
+    body = "\n".join(non_comment_lines(T / "just/sandbox/lifecycle/observe.just"))
+    for knob in ["SBX_APP_DIR", "SBX_APP_CMD", "SBX_APP_PORT"]:
+        assert knob in body, knob
+    assert "apps/inkwell" not in body
+    assert "server.ts" in body  # default command is still bun run server.ts
+
+
+def test_observe_dry_run_parses(stamped_repo: Path):
+    r = subprocess.run(["just", "--dry-run", "sbx", "lifecycle", "observe", "run-x"], cwd=stamped_repo, capture_output=True, text=True)
+    assert r.returncode == 0, r.stderr
+    script = r.stderr + r.stdout
+    assert "SBX_APP_DIR" in script
+    chk = subprocess.run(["bash", "-n"], input=script, capture_output=True, text=True)
+    assert chk.returncode == 0, chk.stderr
