@@ -159,3 +159,10 @@ def test_sssf_admin_uses_top_level_trace_recipes():
     skill = Path(__file__).resolve().parent.parent / ".claude/skills/sssf-admin"
     hits = subprocess.run(["grep", "-rn", "just obs sessions\\|just obs phases", str(skill)], capture_output=True, text=True).stdout
     assert hits == "", hits
+
+
+def test_setup_cost_probe_runs_outside_the_clone():
+    # pi wrote its probe answer (sandboxes.md) into ~/app and the sdlc committed it.
+    body = "\n".join(non_comment_lines(T / "just/sandbox/lifecycle/setup.just"))
+    assert 'PROBE_DIR="$(mktemp -d)"' in body
+    assert 'cd "$PROBE_DIR" && timeout 180 pi -p' in body
