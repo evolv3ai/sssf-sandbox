@@ -35,8 +35,12 @@ def resolve() -> str:
 
 
 def probe(url: str) -> None:
+    timeout = float(os.environ.get("SBX_PROBE_TIMEOUT", "60"))
     env = dict(os.environ, GIT_TERMINAL_PROMPT="0", GIT_ASKPASS="/bin/false")
-    proc = subprocess.run(["git", "ls-remote", "--heads", url], capture_output=True, text=True, env=env, timeout=60)
+    try:
+        proc = subprocess.run(["git", "-c", "credential.helper=", "ls-remote", "--heads", url], capture_output=True, text=True, env=env, timeout=timeout)
+    except subprocess.TimeoutExpired:
+        raise SystemExit(f"source_repo: anonymous clone of {url} timed out after {timeout:g}s (is the host reachable?)")
     if proc.returncode != 0:
         raise SystemExit(f"source_repo: anonymous clone of {url} would fail (is the repo public?):\n{proc.stderr.strip()}")
 

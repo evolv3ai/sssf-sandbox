@@ -58,3 +58,39 @@ def test_probe_fails_on_unreachable_remote(tmp_path):
     repo = git_repo(tmp_path, "https://127.0.0.1:9/acme/widgets.git")
     r = resolve(repo, "--probe")
     assert r.returncode == 1 and "anonymous" in r.stderr
+
+
+def test_probe_timeout_reports_anonymous_failure(tmp_path):
+    # A fake `git` that hangs, first on PATH, plus a 1s timeout: the probe must
+    # exit 1 through the normal message path, never a raw traceback.
+    fake_bin = tmp_path / "bin"
+    fake_bin.mkdir()
+    fake_git = fake_bin / "git"
+    fake_git.write_text("#!/bin/sh\nsleep 5\n")
+    fake_git.chmod(0o755)
+    r = resolve(
+        tmp_path, "--probe",
+        env={"SBX_SOURCE_REPO": "https://example.com/x/y.git",
+             "SBX_PROBE_TIMEOUT": "1",
+             "PATH": f"{fake_bin}:{os.environ['PATH']}"},
+    )
+    assert r.returncode == 1
+    assert "anonymous" in r.stderr and "timed out" in r.stderr
+    assert "Traceback" not in r.stderr
+
+
+def test_probe_disables_credential_helpers(tmp_path):
+    fake_bin = tmp_path / "bin"
+    fake_bin.mkdir()
+    argv_log = tmp_path / "argv.txt"
+    fake_git = fake_bin / "git"
+    fake_git.write_text(f"#!/bin/sh\nprintf '%s\\n' \"$@\" > {argv_log}\n")
+    fake_git.chmod(0o755)
+    r = resolve(
+        tmp_path, "--probe",
+        env={"SBX_SOURCE_REPO": "https://example.com/x/y.git",
+             "PATH": f"{fake_bin}:{os.environ['PATH']}"},
+    )
+    assert r.returncode == 0, r.stderr
+    args = argv_log.read_text().splitlines()
+    assert args[:3] == ["-c", "credential.helper=", "ls-remote"]
