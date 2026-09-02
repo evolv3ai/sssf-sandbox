@@ -1,60 +1,57 @@
 ---
 name: sssf-sandbox
-description: Install and operate the SSSF factory in isolated exe.dev VMs. Use for `/sssf-sandbox install`, preflight checks, sandbox mount/run/observe/harvest/teardown, or best-of-N isolated SSSF runs.
-argument-hint: "[install|doctor|mount|execute|observe|harvest|teardown]"
+description: Install the Super Simple Software Factory plus its exe.dev sandbox surface into any repo, and run the non-billable preflight. Use for `/sssf-sandbox install`, "stamp the factory into this repo", "add sandboxes to sssf", or `just sbx manage doctor`. Operation (mount, execute, observe, harvest, teardown) belongs to sssf-sandbox-orchestrator; managed builds belong to sssf-admin.
+argument-hint: "[install|doctor]"
 ---
 
-# SSSF Sandbox
+# SSSF Sandbox — the installer
 
-This skill adds an optional **out-of-sandbox** execution layer to Super Simple Software Factory (SSSF). The factory itself runs inside a disposable exe.dev VM; the host owns VM lifecycle and the OpenRouter provisioning credential.
+This skill stamps a complete factory-with-sandboxes into the current repo and stops.
+It never creates a VM, mints a key, or calls a model.
 
-## Install into a target repository
+## What gets stamped
 
-From the target repository root, with this skill present:
+| Into the target | What it is | Who drives it |
+|---|---|---|
+| `adws/`, `justfile`, `.env.sample` | upstream SSSF: deterministic ADWs, roster config | `sssf` skill |
+| `just/adws.just` (`just adw …`) | in-sandbox execution layer, one recipe per ADW | the VM, via `execute` |
+| `just/sandbox/` (`just sbx …`) | out-of-sandbox lifecycle: create, fill, setup, observe, execute, teardown; manage: list, harvest, reap, doctor | `sssf-sandbox-orchestrator` |
+| `sandbox_mount/host/` | run records, runs table, source-repo resolution | the recipes |
+| `sandbox_mount/guest/` | provisioner and pi model registry the VM runs | `setup` |
+| `.claude/skills/{sssf, sssf-sandbox, sssf-sandbox-orchestrator, herdr, sandbox-exe-dev, sssf-admin}` | the six operating skills | you, next session |
 
-```bash
-uv run .claude/skills/sssf-sandbox/scripts/install.py
-```
+## Install
 
-The installer first stamps upstream SSSF, then stamps the sandbox module, guest provisioner, and host lifecycle runner. It is idempotent: existing files are skipped unless `--force` is supplied.
-
-## Required host configuration
-
-```bash
-cp .env.sample .env
-# Set OPENROUTER_PROVISIONING_KEY in .env. Never commit or print it.
-just sbx doctor
-```
-
-`doctor` is local-only and non-billable. It validates file layout, required commands, source-repository resolution, and the guest model template. Use `just sbx doctor --remote` only when you intentionally want a read-only SSH connectivity check to exe.dev.
-
-## Operation
+From the target repo root, with this distribution's `.claude/skills/` present
+(clone `evolv3ai/sssf-sandbox` and copy its `.claude/skills` in, or install into the clone itself):
 
 ```bash
-just sbx mount my-task                 # billable: VM + capped runtime key; stops at observe
-just sbx execute <run-id> "task"       # starts SSSF SDLC in that VM
-just sbx observe <run-id>               # prints status and URLs
-just sbx harvest <run-id>               # imports VM commits to refs/sandbox/<run-id>
-just sbx teardown <run-id>              # destructive/billable cleanup; explicit human decision only
+uv run .claude/skills/sssf-sandbox/scripts/install.py          # idempotent; --force overwrites
+cp .env.sample .env                                             # set OPENROUTER_PROVISIONING_KEY
+git add -A && git commit -m "Install SSSF sandbox"              # the VM clones what is pushed
+git push                                                        # the remote must be PUBLIC over https
+just sbx manage doctor                                          # preflight, non-billable
 ```
 
-## Safety rules
+## `.env` knobs the sandbox reads
 
-1. `install` and `doctor` never create a VM, mint a runtime key, or call model APIs.
-2. `mount` never tears down; it stops after the sandbox is ready.
-3. Never run an SSSF write workflow on the host through this skill. Use `just sbx execute`.
-4. Runtime keys are capped, written only to `.sandbox/runs/<id>.key` with mode 0600, and never printed.
-5. Sandboxes have no Git credential. `harvest` transfers only the run branch via a git bundle into `refs/sandbox/<id>`.
-6. `teardown` is always explicit. Harvest first, inspect the ref, then decide whether to keep or destroy the VM.
+| Key | Meaning | Default |
+|---|---|---|
+| `OPENROUTER_PROVISIONING_KEY` | mints/revokes the capped per-run runtime keys. Host only, never enters a VM | required |
+| `SBX_SOURCE_REPO` | public https URL the VM clones | `origin`, git@/ssh:// GitHub forms rewritten to https |
+| `SBX_TAG` | exe.dev tag on every VM this repo creates | `sssf-sandbox` |
+| `SBX_APP_DIR` | app under development, relative to the clone root; empty = no app, the trace UI is proxied instead | empty |
+| `SBX_APP_CMD` | how observe starts it, run inside `SBX_APP_DIR` | `bun run server.ts` |
+| `SBX_APP_PORT` | port it binds (must bind 0.0.0.0) | `4501` |
 
-## Configuration
+## Then
 
-- `SBX_SOURCE_REPO`: HTTPS Git URL cloned inside each VM. Default: current `origin`, converted from GitHub SSH form when possible. It must be reachable unauthenticated by the VM.
-- `SBX_LIMIT`: max USD for the temporary OpenRouter runtime key (default `50`).
-- `SBX_TAG`: exe.dev tag used for the VM (default `sssf-sandbox`).
+- Operate one sandbox or fan out N: read `.claude/skills/sssf-sandbox-orchestrator/SKILL.md`.
+- Hand a whole build over and get a report back: `/sssf-admin build "<what to build>"`.
 
-The default SSSF roster uses multiple providers. For the simplest sandbox setup, change the stamped roster to one OpenRouter-backed provider before mounting.
+## Hard rules
 
-## Attribution
-
-The sandbox architecture is adapted from `disler/inkwell-agent-sandboxes-and-software-factory` (MIT), but deliberately excludes the Inkwell application and its product-specific assets.
+1. `install` and `doctor` never create a VM, mint a key, or call a model API.
+2. The provisioning key never leaves the host. Never print, copy, or ssh it.
+3. Never run an ADW on the host through this skill. Work happens inside a VM.
+4. Teardown is a human decision, never chained after mount or execute.
