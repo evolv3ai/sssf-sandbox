@@ -16,10 +16,12 @@ fill RUN_ID *SHA:
     cd "{{justfile_directory()}}"
     RR="sandbox_mount/host/run_record.py"
 
-    # Public repo: no auth, no GitHub integration, no exe.dev git integration.
-    # Points at the evolv3ai fork so a mounted sandbox builds THIS repo's work,
-    # not upstream's. Must stay public: the VM clones anonymously, no creds cross.
-    REPO="https://github.com/evolv3ai/inkwell-agent-sandboxes-and-software-factory.git"
+    # The VM clones anonymously: no auth, no GitHub integration, no exe.dev git
+    # integration cross the wire. source_repo.py returns SBX_SOURCE_REPO from .env
+    # if set, else origin rewritten to https, and refuses anything that is not
+    # https:// — a private or ssh-only remote fails here, on the host, with a
+    # message, instead of inside the VM with a credential prompt nobody can answer.
+    REPO=$(sandbox_mount/host/source_repo.py)
 
     # *SHA is variadic: it interpolates to "" when unpinned, space-joined otherwise.
     # Only the first token is meaningful; extra words are a caller mistake we ignore.
