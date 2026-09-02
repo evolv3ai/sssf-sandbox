@@ -62,3 +62,24 @@ def test_create_uses_sbx_tag():
     assert '--tag "$TAG"' in body
     assert 'TAG="${SBX_TAG:-sssf-sandbox}"' in body
     assert "--tag inkwell" not in body
+
+
+def test_provision_globs_apps():
+    body = "\n".join(non_comment_lines(T / "sandbox_mount/guest/provision.sh"))
+    assert "apps/inkwell" not in body
+    assert "apps/*/package.json" in body
+    chk = subprocess.run(["bash", "-n", str(T / "sandbox_mount/guest/provision.sh")], capture_output=True, text=True)
+    assert chk.returncode == 0, chk.stderr
+
+
+def test_provision_step5_runs_with_no_apps(tmp_path: Path):
+    # Extract step 5 and run it in a repo with no apps/ and no visualizer: must
+    # print two skips and exit 0, and must not leave a literal "apps/*" behind.
+    src = (T / "sandbox_mount/guest/provision.sh").read_text()
+    start = src.index("# ── 5. bun install")
+    end = src.index("# ── 6.")
+    snippet = "set -euo pipefail\nstep(){ echo \"-- $1\"; }\nsay(){ echo \"   $*\"; }\n" + src[start:end]
+    r = subprocess.run(["bash", "-c", snippet], cwd=tmp_path, capture_output=True, text=True)
+    assert r.returncode == 0, r.stderr
+    assert "apps/*" not in r.stdout
+    assert "skipped" in r.stdout

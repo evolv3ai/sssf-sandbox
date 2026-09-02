@@ -101,9 +101,18 @@ unset models_json api_key
 say "wrote $HOME/.pi/agent/models.json ($(grep -c '"id"' "$HOME/.pi/agent/models.json" || true) models)"
 
 # ── 5. bun install ───────────────────────────────────────────────────────────
+# Every bun app the repo carries under apps/, plus the trace UI. A repo with no
+# bun apps only installs the visualizer; one with none of either just skips.
 step "5/9 bun install"
-for dir in apps/inkwell .claude/skills/sssf/apps/visualizer; do
-  if [[ -f "$dir/package.json" ]]; then
+shopt -s nullglob
+app_manifests=(apps/*/package.json)
+shopt -u nullglob
+if [[ ${#app_manifests[@]} -eq 0 ]]; then
+  say "skipped apps/ (no bun apps)"
+fi
+for manifest in "${app_manifests[@]}" .claude/skills/sssf/apps/visualizer/package.json; do
+  dir="${manifest%/package.json}"
+  if [[ -f "$manifest" ]]; then
     ( cd "$dir" && bun install )
     say "installed ${dir}"
   else
