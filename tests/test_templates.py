@@ -115,3 +115,12 @@ def test_provision_step5_runs_with_no_apps(tmp_path: Path):
     assert r.returncode == 0, r.stderr
     assert "apps/*" not in r.stdout
     assert "skipped" in r.stdout
+
+
+def test_env_sample_parses_as_dotenv(stamped_repo: Path):
+    # `set dotenv-load` makes just parse .env before any recipe runs; an unquoted
+    # value with spaces (SBX_APP_CMD=bun run server.ts) aborts every `just sbx` call.
+    (stamped_repo / ".env").write_text((stamped_repo / ".env.sample").read_text())
+    r = subprocess.run(["just", "--evaluate"], cwd=stamped_repo, capture_output=True, text=True)
+    assert r.returncode == 0, r.stderr
+    assert "Failed to load environment file" not in r.stderr
