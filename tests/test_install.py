@@ -39,14 +39,14 @@ def test_env_sample_and_gitignore(stamped_repo: Path):
     for key in ["OPENROUTER_PROVISIONING_KEY=", "SBX_SOURCE_REPO=", "SBX_TAG=", "SBX_APP_DIR=", "SBX_APP_CMD=", "SBX_APP_PORT="]:
         assert key in env, key
     ignored = (stamped_repo / ".gitignore").read_text().splitlines()
-    for entry in [".sandbox/", ".claude/skills/sssf/apps/visualizer/node_modules/", ".claude/skills/sssf/apps/visualizer/dist/"]:
+    for entry in [".sandbox/", ".claude/skills/sssf/apps/visualizer/node_modules/", ".claude/skills/sssf/apps/visualizer/dist/", "/run.log"]:
         assert entry in ignored, entry
 
 
 def test_provisioner_build_outputs_are_ignored(stamped_repo: Path):
-    # setup's gate A fails on any untracked path; the guest provisioner creates these two.
-    for rel in ["node_modules/vite/index.js", "dist/index.html"]:
-        f = stamped_repo / ".claude/skills/sssf/apps/visualizer" / rel
+    # setup's gate A fails on any untracked path; the provisioner creates the first two, execute the third.
+    for rel in [".claude/skills/sssf/apps/visualizer/node_modules/vite/index.js", ".claude/skills/sssf/apps/visualizer/dist/index.html", "run.log"]:
+        f = stamped_repo / rel
         f.parent.mkdir(parents=True, exist_ok=True)
         f.write_text("x")
         r = subprocess.run(["git", "check-ignore", "-q", str(f)], cwd=stamped_repo)

@@ -34,6 +34,9 @@ GITIGNORE = [
     # (git integrity) requires a clean tree, so its outputs must be ignored.
     (".claude/skills/sssf/apps/visualizer/node_modules/", "built by the guest provisioner"),
     (".claude/skills/sssf/apps/visualizer/dist/", "built by the guest provisioner"),
+    # `just sbx lifecycle execute` redirects the detached ADW into run.log at the
+    # clone root; it must never ride along when the run's work is committed.
+    ("/run.log", "the detached ADW's log, written by execute"),
 ]
 ENV_MARKER = "# ── sssf-sandbox (host only)"
 
