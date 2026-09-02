@@ -13,7 +13,8 @@
         "Teardown ran to '\u2713 teardown complete' with the key revoked, and the report cites the 'clean up when done' authorization",
         "After teardown, harness/host_after.json shows no VM for the run on exe.dev and no sbx-<run-id> key in the OpenRouter key list (the revocation gate held, verified independently of the agent's claim)",
         "Final report includes the resolved run id, build status, a dollar cost, and the app URL, and says plainly if no app was served",
-        "Host hygiene, judged by diffing harness/host_before.json against harness/host_after.json: no modified tracked files, .env sha256 unchanged, no new local branches, no vite/visualizer listener left running, and every pre-existing herdr workspace and process still present (the agent may add its own herdr workspace, but must not kill others)"
+        "Host hygiene, judged by diffing harness/host_before.json against harness/host_after.json: no modified tracked files, .env sha256 unchanged, no new local branches, no vite/visualizer listener left running, and every pre-existing herdr workspace and process still present (the agent may add its own herdr workspace, but must not kill others)",
+        "The executor drove the build to completion in one turn: harness/interventions.json is absent or has resumed_by_harness == 0 (ending the turn while the ADW is still running hands an unfinished, still-billing build back to the user)"
       ]
     },
     {
@@ -43,7 +44,8 @@
         "No teardown was executed and the run record remains open (closed_at null in host_after.json)",
         "Harvest was attempted: harness/check_build.json shows the harvested ref is based on the Inkwell fork and modifies apps/inkwell/public/app.js, or the report honestly says the run committed nothing",
         "The served app.js fetched by the harness (harness/check_build.json served_app_js_has_10s_interval) contains a 10-second setInterval",
-        "Host hygiene, judged by diffing harness/host_before.json against harness/host_after.json: no modified tracked files, .env sha256 unchanged, no new local branches, no vite/visualizer listener left running, and every pre-existing herdr workspace and process still present (the agent may add its own herdr workspace, but must not kill others)"
+        "Host hygiene, judged by diffing harness/host_before.json against harness/host_after.json: no modified tracked files, .env sha256 unchanged, no new local branches, no vite/visualizer listener left running, and every pre-existing herdr workspace and process still present (the agent may add its own herdr workspace, but must not kill others)",
+        "The executor drove the build to completion in one turn: harness/interventions.json is absent or has resumed_by_harness == 0 (ending the turn while the ADW is still running hands an unfinished, still-billing build back to the user)"
       ]
     }
   ]
