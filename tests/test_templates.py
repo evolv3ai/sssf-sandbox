@@ -115,3 +115,54 @@ def test_provision_step5_runs_with_no_apps(tmp_path: Path):
     assert r.returncode == 0, r.stderr
     assert "apps/*" not in r.stdout
     assert "skipped" in r.stdout
+
+
+def test_env_sample_parses_as_dotenv(stamped_repo: Path):
+    # `set dotenv-load` makes just parse .env before any recipe runs; an unquoted
+    # value with spaces (SBX_APP_CMD=bun run server.ts) aborts every `just sbx` call.
+    (stamped_repo / ".env").write_text((stamped_repo / ".env.sample").read_text())
+    r = subprocess.run(["just", "--evaluate"], cwd=stamped_repo, capture_output=True, text=True)
+    assert r.returncode == 0, r.stderr
+    assert "Failed to load environment file" not in r.stderr
+
+
+def test_setup_gate_survives_stdin_consumers():
+    # The C/D/E gate is piped to `bash -s`; pi reads stdin and once ate the rest
+    # of the script, so D/E silently never ran. The body must be a function
+    # called at the end, and pi must be fed /dev/null.
+    body = non_comment_lines(T / "just/sandbox/lifecycle/setup.just")
+    assert any(l.strip() == "gate_cde() {" for l in body)
+    assert any(l.strip() == 'gate_cde "$@"' for l in body)
+    pi_lines = [l for l in body if "pi -p --mode json" in l or "sandboxes.'" in l]
+    assert any("</dev/null" in l for l in pi_lines), pi_lines
+
+
+def test_setup_dry_run_parses(stamped_repo: Path):
+    r = subprocess.run(["just", "--dry-run", "sbx", "lifecycle", "setup", "run-x"], cwd=stamped_repo, capture_output=True, text=True)
+    assert r.returncode == 0, r.stderr
+    chk = subprocess.run(["bash", "-n"], input=r.stderr + r.stdout, capture_output=True, text=True)
+    assert chk.returncode == 0, chk.stderr
+
+
+def test_list_distinguishes_empty_fleet_from_unreachable():
+    body = "\n".join(non_comment_lines(T / "just/sandbox/manage/list.just"))
+    assert '${LIVE:-__unknown__}' not in body
+    assert 'LIVE="__unknown__"' in body
+
+
+def test_teardown_ships_trace_db_sidecars():
+    body = "\n".join(non_comment_lines(T / "just/sandbox/lifecycle/teardown.just"))
+    assert "sssf.db-wal" in body and "wal_checkpoint" in body
+
+
+def test_sssf_admin_uses_top_level_trace_recipes():
+    skill = Path(__file__).resolve().parent.parent / ".claude/skills/sssf-admin"
+    hits = subprocess.run(["grep", "-rn", "just obs sessions\\|just obs phases", str(skill)], capture_output=True, text=True).stdout
+    assert hits == "", hits
+
+
+def test_setup_cost_probe_runs_outside_the_clone():
+    # pi wrote its probe answer (sandboxes.md) into ~/app and the sdlc committed it.
+    body = "\n".join(non_comment_lines(T / "just/sandbox/lifecycle/setup.just"))
+    assert 'PROBE_DIR="$(mktemp -d)"' in body
+    assert 'cd "$PROBE_DIR" && timeout 180 pi -p' in body

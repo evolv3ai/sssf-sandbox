@@ -28,7 +28,16 @@ TEMPLATES = SKILL / "templates"
 # herdr; the orchestrator drives the sbx recipes; sandbox-exe-dev is the VM layer.
 SKILLS = ["sssf", "sssf-sandbox", "sssf-sandbox-orchestrator", "herdr", "sandbox-exe-dev", "sssf-admin"]
 MODULE_LINES = ["mod adw 'just/adws.just'", "mod sbx 'just/sandbox/mod.just'"]
-GITIGNORE = [".sandbox/"]
+GITIGNORE = [
+    (".sandbox/", "run records, runtime keys, harvested bundles"),
+    # The guest provisioner builds the sssf visualizer in place; gate assertion A
+    # (git integrity) requires a clean tree, so its outputs must be ignored.
+    (".claude/skills/sssf/apps/visualizer/node_modules/", "built by the guest provisioner"),
+    (".claude/skills/sssf/apps/visualizer/dist/", "built by the guest provisioner"),
+    # `just sbx lifecycle execute` redirects the detached ADW into run.log at the
+    # clone root; it must never ride along when the run's work is committed.
+    ("/run.log", "the detached ADW's log, written by execute"),
+]
 ENV_MARKER = "# ── sssf-sandbox (host only)"
 
 
@@ -102,8 +111,8 @@ def main() -> int:
                    "\n# in-sandbox ADWs and out-of-sandbox VM lifecycle (stamped by sssf-sandbox)\n"
                    + "\n".join(MODULE_LINES) + "\n"):
         stamped.append(f"{root / 'justfile'} (+ adw, sbx modules)")
-    for entry in GITIGNORE:
-        if append_once(root / ".gitignore", entry, f"\n# sssf-sandbox: run records, runtime keys, harvested bundles\n{entry}\n"):
+    for entry, why in GITIGNORE:
+        if append_once(root / ".gitignore", entry, f"\n# sssf-sandbox: {why}\n{entry}\n"):
             stamped.append(f"{root / '.gitignore'} (+ {entry})")
     if append_once(root / ".env.sample", ENV_MARKER, "\n" + (TEMPLATES / "env.sample.fragment").read_text()):
         stamped.append(f"{root / '.env.sample'} (+ sandbox settings)")

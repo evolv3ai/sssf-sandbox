@@ -7,7 +7,7 @@ source at a newer commit, re-applying the listed local edits, and updating the r
 |---|---|---|---|
 | `.claude/skills/sssf/` | `disler/super-simple-software-factory` | as of 2026-08-02 (`de31374` here) | none |
 | `.claude/skills/sssf-sandbox/templates/just/adws.just` | `evolv3ai/inkwell-agent-sandboxes-and-software-factory` `just/adws.just` | `57b0f10` | none |
-| `.claude/skills/sssf-sandbox/templates/just/sandbox/` | same repo, `just/sandbox/` | `57b0f10` | `lifecycle/fill.just` clone URL via `source_repo.py`; `lifecycle/observe.just` app knobs `SBX_APP_*`; `lifecycle/create.just` tag via `SBX_TAG`; `manage/mod.just` doctor probes the source repo |
+| `.claude/skills/sssf-sandbox/templates/just/sandbox/` | same repo, `just/sandbox/` | `57b0f10` | `lifecycle/fill.just` clone URL via `source_repo.py`; `lifecycle/observe.just` app knobs `SBX_APP_*`; `lifecycle/create.just` tag via `SBX_TAG`; `manage/mod.just` doctor probes the source repo; `manage/list.just` tells an empty fleet from an unreachable control plane; `lifecycle/setup.just` wraps the C/D/E gate in a function and feeds pi `</dev/null` (stdin-consuming pi truncated the script, so D/E never ran); `lifecycle/teardown.just` checkpoints the trace db WAL and ships the sidecars |
 | `.claude/skills/sssf-sandbox/templates/sandbox_mount/` | same repo, `sandbox_mount/` | `57b0f10` | `guest/provision.sh` step 5 globs `apps/*`; `host/source_repo.py` is new |
 | `.claude/skills/sssf-sandbox-orchestrator/` | same repo | `57b0f10` (authored upstream by disler at `92f1701`) | none. Its cookbooks show port 4501 and run ids like `inkwell-e2e`; those are the defaults and examples, not requirements |
 | `.claude/skills/herdr/` | same repo | `57b0f10` (disler `92f1701`) | none |

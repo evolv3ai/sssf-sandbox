@@ -151,6 +151,13 @@ setup RUN_ID CONFIG="":
     echo "[gate] C roster ping   D non-zero cost   E remaining credit"
     if "${SSH[@]}" 'bash -s' {{ quote(CONFIG) }} <<'REMOTE_CDE'; then
     set -uo pipefail
+    # The whole gate lives in one function that is CALLED on the last line.
+    # `bash -s` reads this script from stdin incrementally, so any command in
+    # it that reads stdin (pi did, in D) swallows the rest of the script: bash
+    # hits EOF, exits 0, and the host prints C/D/E PASS with C's FAIL lines
+    # still on screen and D/E never run. MEASURED on a real mount. A function
+    # body is parsed in full before a single command executes.
+    gate_cde() {
     cd "$HOME/app" || { echo "   no ~/app on this VM"; exit 1; }
     command -v jq >/dev/null 2>&1 || { echo "   jq missing (it ships in the exeuntu image)"; exit 1; }
 
@@ -218,11 +225,16 @@ setup RUN_ID CONFIG="":
     cost_fail=0
     # jq, not python: an unindented line inside a recipe body TERMINATES the
     # recipe, and multi-line python cannot survive that. jq ships in the image.
-    pi_cost="$(timeout 180 pi -p --mode json \
+    # Run the probe from a scratch dir: pi can write the answer to a file in its
+    # cwd, and from ~/app that file (sandboxes.md) dirtied the tree and was
+    # swept into the sdlc's commit on the first mount where D really ran.
+    PROBE_DIR="$(mktemp -d)"
+    pi_cost="$(cd "$PROBE_DIR" && timeout 180 pi -p --mode json \
                  --provider openrouter --model deepseek/deepseek-v4-flash-0731 \
-                 'Write one sentence about sandboxes.' 2>/dev/null \
+                 'Write one sentence about sandboxes.' 2>/dev/null </dev/null \
                | jq -s '[.. | objects | select(has("cost")) | .cost.total // 0] | max // 0' \
                || echo 0)"
+    rm -rf "$PROBE_DIR"
     if awk -v c="$pi_cost" 'BEGIN { exit !(c > 0) }'; then
       echo "   pi reports cost \$${pi_cost} on a live call (rate table is loaded)"
     else
@@ -256,6 +268,8 @@ setup RUN_ID CONFIG="":
 
     [ "$ping_fail" -eq 0 ] || exit 2
     [ "$cost_fail" -eq 0 ] || exit 3
+    }
+    gate_cde "$@"
     REMOTE_CDE
       echo "[gate] C PASS  every roster model answered"
       echo "[gate] D PASS  non-zero cost and a loaded rate table"

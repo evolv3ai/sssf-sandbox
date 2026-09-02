@@ -34,7 +34,7 @@ it survives this conversation ending, fans out to N boxes in parallel, stays vis
 in their own terminal, and costs zero orchestration tokens while it runs — you block on herdr's
 wait verbs instead of polling. herdr evolves fast: confirm verbs against `herdr --help` (as of
 0.8.0 the waits are `pane wait-output` and `agent wait`, both namespaced — there is no top-level
-`wait`). Quick synchronous reads (`just sbx manage list`, `just obs sessions`, a one-off
+`wait`). Quick synchronous reads (`just sbx manage list`, `just sessions`, a one-off
 `run cmd`) are fine straight from your own shell; anything long-running or parallel belongs in a
 pane.
 
@@ -73,7 +73,7 @@ The spine:
    workspace. If not authorized: report, recommend, and leave the VM running with its URLs.
 
 A failed gate or a `✗ fail` banner is not the end of the build — it is a diagnosis task. Keep the
-VM alive, read the failing assertion or the trace (`just obs phases <adw_id>` in-box), fix or
+VM alive, read the failing assertion or the trace (`just phases <adw_id>` in-box), fix or
 re-enter (`--adw-id` rejoins the session with context intact), and only report defeat when you can
 say precisely what is broken.
 
