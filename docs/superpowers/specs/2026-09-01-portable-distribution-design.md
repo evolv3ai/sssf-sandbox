@@ -31,13 +31,15 @@ evolv3ai/sssf-sandbox
       SKILL.md                   thin: install, doctor, then hand off to the orchestrator
       scripts/install.py
       templates/
-        just/sandbox/**          15 files, vendored from inkwell just/sandbox/
+        just/adws.just           vendored from inkwell; the VM runs `just adw <recipe>` in the clone
+        just/sandbox/**          15 files, vendored from inkwell just/sandbox/; 3 parameterized
         sandbox_mount/
           host/run_record.py
           host/runs_table.py
+          host/source_repo.py    new: resolves and validates the public clone URL
           guest/provision.sh     parameterized, see below
           guest/models.json.tmpl
-        env.sample.fragment      OPENROUTER_PROVISIONING_KEY, SBX_SOURCE_REPO
+        env.sample.fragment      OPENROUTER_PROVISIONING_KEY, SBX_SOURCE_REPO, SBX_TAG, SBX_APP_*
     sssf-sandbox-orchestrator/   vendored from inkwell (disler, 92f1701)
     herdr/                       vendored from inkwell (disler, 92f1701)
     sandbox-exe-dev/             vendored from inkwell (disler, 92f1701)
@@ -58,24 +60,37 @@ separate sandbox config file has no consumer.
 1. Run the sibling `sssf/scripts/install.py` (unchanged from today).
 2. Stamp every sibling skill into `target/.claude/skills/`: `sssf`, `sssf-sandbox`,
    `sssf-sandbox-orchestrator`, `herdr`, `sandbox-exe-dev`, `sssf-admin`.
-3. Stamp `templates/just/sandbox` to `target/just/sandbox` and `templates/sandbox_mount`
-   to `target/sandbox_mount`.
-4. Append `mod sbx 'just/sandbox/mod.just'` to `target/justfile` once. The sandbox
-   `mod.just` carries its own `set working-directory`, `set dotenv-load` and
-   `set positional-arguments`, so the root justfile needs nothing else.
+3. Stamp `templates/just` to `target/just` (the `adw` module plus `sandbox/`) and
+   `templates/sandbox_mount` to `target/sandbox_mount`.
+4. Append `mod adw 'just/adws.just'` and `mod sbx 'just/sandbox/mod.just'` to
+   `target/justfile` once. Both modules carry their own `set working-directory`,
+   `set dotenv-load` and `set positional-arguments`, so the root justfile needs nothing else.
+   The `adw` module is required: `execute` runs `just adw <recipe>` inside the VM's clone
+   and `doctor` checks `just --list adw` on the host.
 5. Append `.sandbox/` and `.env` to `.gitignore` once, and the env fragment to `.env.sample` once.
 6. Idempotent: existing files are skipped unless `--force`. Self-install into this repo's
    own root stays supported (the existing same-path guard).
 7. Makes no VM, key, or model call.
 
-## Parameterizing the two Inkwell-coupled spots
+## Parameterizing the four Inkwell-coupled spots
 
-Verified by grep: the only app-specific references in the 19 vendored files are these two.
+Verified by grep (`inkwell` outside comments): these are the only app-specific references
+in the 20 vendored files. Every knob is read from `.env` via the modules' `dotenv-load`.
 
-- `just/sandbox/lifecycle/fill.just` hardcodes the clone URL. It becomes
-  `${SBX_SOURCE_REPO:-<origin as HTTPS>}`. The URL must stay a public HTTPS remote because
-  the VM clones anonymously and no credential crosses. `doctor` fails if the resolved URL is
-  not HTTPS or the remote is private.
+- `just/sandbox/lifecycle/fill.just` hardcodes the clone URL. It now calls
+  `sandbox_mount/host/source_repo.py`, which returns `SBX_SOURCE_REPO` if set, else `origin`
+  with the `git@github.com:` and `ssh://git@github.com/` forms rewritten to HTTPS, and exits
+  non-zero for anything that is not `https://`. The VM clones anonymously, so the remote must
+  be public. `doctor` runs `source_repo.py --probe`, an anonymous `git ls-remote`, so a
+  private remote fails preflight instead of failing inside the VM.
+- `just/sandbox/lifecycle/observe.just` starts the Inkwell app from `apps/inkwell` on 4501
+  and proxies it publicly. It now reads `SBX_APP_DIR`, `SBX_APP_CMD` (default
+  `bun run server.ts`) and `SBX_APP_PORT` (default `4501`). With `SBX_APP_DIR` unset there is
+  no app: the trace UI on 4600 becomes the proxied port, it is not set public, and the
+  verification accepts any reachable non-5xx answer. The recorded `ports` field then carries
+  `"app": null`.
+- `just/sandbox/lifecycle/create.just` tags every VM `inkwell`. It now uses
+  `SBX_TAG`, default `sssf-sandbox`.
 - `sandbox_mount/guest/provision.sh` step 5 loops over a hardcoded `apps/inkwell` plus the
   visualizer. It becomes: every `apps/*/package.json` found, plus the visualizer, keeping
   the existing skip-when-absent behaviour. A repo with no bun apps provisions cleanly.
