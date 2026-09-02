@@ -92,7 +92,7 @@ herdr pane read $LOG --source recent-unwrapped --lines 60             # the bann
   `just sbx run cmd <run-id> 'sqlite3 adws/adw_data/sssf.db "select adw_id,status,total_tokens,round(total_cost,4) from sessions order by started_at desc limit 3"'`.
 - A wait timing out is information, not failure: the box may be mid-build on a slow model. Check
   pid + sessions before declaring anything.
-- Capture the **`adw_id`** from the banner — it is the handle for `just obs phases <adw_id>` and
+- Capture the **`adw_id`** from the banner — it is the handle for `just phases <adw_id>` and
   for `--adw-id` re-entry, and it is not the run id.
 
 ## Execute's full surface

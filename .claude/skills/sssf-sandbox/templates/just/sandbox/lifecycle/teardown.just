@@ -110,7 +110,7 @@ teardown RUN_ID *FLAGS:
         # One round trip, and `ls -d` filters to what actually exists so a run that
         # died before writing app_docs/ is not an error.
         ssh "${SSH_OPTS[@]}" "$VM".exe.xyz \
-            'cd app 2>/dev/null || exit 0; P=$(ls -d specs app_docs adws/adw_data/sssf.db run.log 2>/dev/null); [ -z "$P" ] && exit 0; tar cf - $P' \
+            'cd app 2>/dev/null || exit 0; command -v sqlite3 >/dev/null 2>&1 && sqlite3 adws/adw_data/sssf.db "PRAGMA wal_checkpoint(TRUNCATE)" >/dev/null 2>&1; P=$(ls -d specs app_docs adws/adw_data/sssf.db adws/adw_data/sssf.db-wal adws/adw_data/sssf.db-shm run.log 2>/dev/null); [ -z "$P" ] && exit 0; tar cf - $P' \
             > "$TAR_TMP" || true
         if [ -s "$TAR_TMP" ]; then
             tar xf "$TAR_TMP" -C "$ART"

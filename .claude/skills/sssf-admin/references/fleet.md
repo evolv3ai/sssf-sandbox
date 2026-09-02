@@ -13,7 +13,7 @@ They disagree in informative ways. Reconcile them in this order:
 | exe.dev | `ssh exe.dev ls --json` | which VMs are *actually* alive, their tags and URLs |
 | OpenRouter keys (live spend) | `curl -sS --max-time 30 "https://openrouter.ai/api/v1/keys" -H "Authorization: Bearer $OPENROUTER_PROVISIONING_KEY"` | **current per-key `usage` dollars, live, for every key including open runs.** Read-only GET (the same call reap/teardown make); returns names, hashes, usage, limits — never raw key material |
 | OpenRouter keys (orphans) | `just sbx manage reap` (dry run) | `sbx-` keys whose VM/record is gone. It *skips* keys with a live VM, so it is orphan detection, **not** a live-spend read |
-| Trace db | `just obs sessions` (host) / in-box via `run cmd` | the ADW runs *inside* a box — many per sandbox |
+| Trace db | `just sessions` (host) / in-box via `run cmd` | the ADW runs *inside* a box — many per sandbox |
 
 Match a key to its sandbox by stripping the `sbx-` prefix: the remainder is the run id, which is
 also the VM name (the record's `vm_name` wins if it differs). For any money question, the key
@@ -83,7 +83,7 @@ git diff refs/sandbox/<a>..refs/sandbox/<b> -- <path>  # arms against each other
 
 Judge on: did the suite pass (the banner's phases count), diff size versus the ask (smallest
 correct diff wins), cost, and anything the reviewer phase flagged (in-box:
-`just obs phases <adw_id>`). Recommend a winner with a one-line reason per losing arm. **Harvest
+`just phases <adw_id>`). Recommend a winner with a one-line reason per losing arm. **Harvest
 never merges** — the refs are parked for the human; offer the merge command, don't run it.
 
 ## Spend accounting
