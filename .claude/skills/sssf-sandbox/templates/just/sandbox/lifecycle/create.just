@@ -81,8 +81,9 @@ create RUN_ID *FLAGS:
     # ── 3. the VM ──────────────────────────────────────────────────────────────
     # Control plane is plain ssh; --json makes it scriptable. --tag inkwell is
     # what `reap` and bulk cleanup filter on.
-    echo "vm:      creating $RUN_ID (ssh exe.dev new --tag inkwell) ..."
-    VM_JSON="$(ssh exe.dev new --name "$RUN_ID" --tag inkwell --json)"
+    TAG="${SBX_TAG:-sssf-sandbox}"   # exe.dev tag, from .env; lets `ssh exe.dev ls` group this repo's VMs
+    echo "vm:      creating $RUN_ID (ssh exe.dev new --tag $TAG) ..."
+    VM_JSON="$(ssh exe.dev new --name "$RUN_ID" --tag "$TAG" --json)"
 
     # The exact key names of `new --json` are UNVERIFIED (only `ls --json` was
     # observed: {"vms":[{vm_name,https_url,ssh_dest,...}]}). Accept the shapes we

@@ -55,3 +55,10 @@ def test_observe_dry_run_parses(stamped_repo: Path):
     assert "SBX_APP_DIR" in script
     chk = subprocess.run(["bash", "-n"], input=script, capture_output=True, text=True)
     assert chk.returncode == 0, chk.stderr
+
+
+def test_create_uses_sbx_tag():
+    body = "\n".join(non_comment_lines(T / "just/sandbox/lifecycle/create.just"))
+    assert '--tag "$TAG"' in body
+    assert 'TAG="${SBX_TAG:-sssf-sandbox}"' in body
+    assert "--tag inkwell" not in body
